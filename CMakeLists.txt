@@ -31,3 +31,7 @@ add_test(NAME test_cfr COMMAND test_cfr)
 add_executable(test_exploit tests/test_exploit.cpp)
 target_link_libraries(test_exploit PRIVATE poker_solver)
 add_test(NAME test_exploit COMMAND test_exploit)
+
+add_executable(test_leduc_model tests/test_leduc_model.cpp)
+target_link_libraries(test_leduc_model PRIVATE poker_solver)
+add_test(NAME test_leduc_model COMMAND test_leduc_model)
