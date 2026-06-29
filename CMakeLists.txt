@@ -27,3 +27,7 @@ add_test(NAME test_kuhn COMMAND test_kuhn)
 add_executable(test_cfr tests/test_cfr.cpp)
 target_link_libraries(test_cfr PRIVATE poker_solver)
 add_test(NAME test_cfr COMMAND test_cfr)
+
+add_executable(test_exploit tests/test_exploit.cpp)
+target_link_libraries(test_exploit PRIVATE poker_solver)
+add_test(NAME test_exploit COMMAND test_exploit)
