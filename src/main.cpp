@@ -1,61 +1,33 @@
-// Demonstrates the Kuhn poker game model: prints the betting tree and the full
-// set of information sets. The CFR solver will take over this entry point next.
+// Trains CFR on Kuhn poker and prints the average strategy and game value.
 
+#include "poker_solver/cfr.hpp"
 #include "poker_solver/kuhn.hpp"
 
+#include <cstdlib>
+#include <iomanip>
 #include <iostream>
-#include <string>
-#include <vector>
 
 namespace kuhn = poker_solver::kuhn;
 
-namespace {
+int main(int argc, char** argv) {
+    int iterations = (argc > 1) ? std::atoi(argv[1]) : 100000;
+    if (iterations <= 0) iterations = 100000;
 
-// Recursively print the betting tree (cards aside), marking terminal nodes.
-void print_tree(const std::string& history, int depth) {
-    const std::string indent(static_cast<std::size_t>(depth) * 2, ' ');
-    const std::string label = history.empty() ? "(start)" : history;
+    poker_solver::cfr::Trainer trainer;
+    const double value = trainer.train(iterations);
 
-    if (kuhn::is_terminal(history)) {
-        std::cout << indent << label << "  [terminal]\n";
-        return;
+    std::cout << "poker-solver — Kuhn CFR\n";
+    std::cout << "iterations: " << iterations << '\n';
+    std::cout << std::fixed << std::setprecision(4);
+    std::cout << "game value to player 0: " << value
+              << "  (theory: -1/18 = -0.0556)\n\n";
+
+    std::cout << "average strategy        pass     bet\n";
+    for (const auto& [key, node] : trainer.nodes()) {
+        const auto avg = node.average_strategy();
+        std::cout << "  " << std::left << std::setw(6) << key << std::right
+                  << std::setw(10) << avg[kuhn::kPass]
+                  << std::setw(8) << avg[kuhn::kBet] << '\n';
     }
-
-    std::cout << indent << label << "  -> player " << kuhn::current_player(history)
-              << " to act\n";
-    print_tree(history + kuhn::action_char(kuhn::kPass), depth + 1);
-    print_tree(history + kuhn::action_char(kuhn::kBet), depth + 1);
-}
-
-// Collect every non-terminal history at which `player` is the one to act.
-void collect_decision_histories(const std::string& history, int player,
-                                std::vector<std::string>& out) {
-    if (kuhn::is_terminal(history)) return;
-    if (kuhn::current_player(history) == player) out.push_back(history);
-    collect_decision_histories(history + kuhn::action_char(kuhn::kPass), player, out);
-    collect_decision_histories(history + kuhn::action_char(kuhn::kBet), player, out);
-}
-
-}  // namespace
-
-int main() {
-    std::cout << "poker-solver — Kuhn poker model\n\n";
-
-    std::cout << "Betting tree:\n";
-    print_tree("", 0);
-
-    std::cout << "\nInformation sets (12 total):\n";
-    for (int player = 0; player < kuhn::kNumPlayers; ++player) {
-        std::vector<std::string> histories;
-        collect_decision_histories("", player, histories);
-        std::cout << "  player " << player << ":";
-        for (const auto& h : histories) {
-            for (int card = 0; card < kuhn::kNumCards; ++card) {
-                std::cout << ' ' << kuhn::info_set_key(card, h);
-            }
-        }
-        std::cout << '\n';
-    }
-
     return 0;
 }

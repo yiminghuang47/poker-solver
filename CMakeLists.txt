@@ -23,3 +23,7 @@ enable_testing()
 add_executable(test_kuhn tests/test_kuhn.cpp)
 target_link_libraries(test_kuhn PRIVATE poker_solver)
 add_test(NAME test_kuhn COMMAND test_kuhn)
+
+add_executable(test_cfr tests/test_cfr.cpp)
+target_link_libraries(test_cfr PRIVATE poker_solver)
+add_test(NAME test_cfr COMMAND test_cfr)
