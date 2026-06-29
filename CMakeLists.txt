@@ -14,9 +14,12 @@ add_library(poker_solver INTERFACE)
 target_include_directories(poker_solver INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(poker_solver INTERFACE cxx_std_20)
 
-# Demo / solver entry point.
+# Demo / solver entry points.
 add_executable(poker_solver_app src/main.cpp)
 target_link_libraries(poker_solver_app PRIVATE poker_solver)
+
+add_executable(leduc_solver_app src/leduc_main.cpp)
+target_link_libraries(leduc_solver_app PRIVATE poker_solver)
 
 # Tests.
 enable_testing()
@@ -35,3 +38,7 @@ add_test(NAME test_exploit COMMAND test_exploit)
 add_executable(test_leduc_model tests/test_leduc_model.cpp)
 target_link_libraries(test_leduc_model PRIVATE poker_solver)
 add_test(NAME test_leduc_model COMMAND test_leduc_model)
+
+add_executable(test_leduc_cfr tests/test_leduc_cfr.cpp)
+target_link_libraries(test_leduc_cfr PRIVATE poker_solver)
+add_test(NAME test_leduc_cfr COMMAND test_leduc_cfr)
