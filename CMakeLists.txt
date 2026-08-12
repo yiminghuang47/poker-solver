@@ -42,3 +42,9 @@ add_test(NAME test_leduc_model COMMAND test_leduc_model)
 add_executable(test_leduc_cfr tests/test_leduc_cfr.cpp)
 target_link_libraries(test_leduc_cfr PRIVATE poker_solver)
 add_test(NAME test_leduc_cfr COMMAND test_leduc_cfr)
+
+# Cross-validates the generic belief-propagation best response against the
+# brute-force oracle on Kuhn. This is what the Game concept buys.
+add_executable(test_equivalence tests/test_equivalence.cpp)
+target_link_libraries(test_equivalence PRIVATE poker_solver)
+add_test(NAME test_equivalence COMMAND test_equivalence)

@@ -60,7 +60,7 @@ With CMake:
 ```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
-ctest --test-dir build --output-on-failure   # runs all five test suites
+ctest --test-dir build --output-on-failure   # runs all six test suites
 ./build/poker_solver_app        # Kuhn
 ./build/leduc_solver_app        # Leduc
 ```
@@ -77,17 +77,27 @@ Both demos take an optional iteration count, e.g. `./poker_solver_app 1000000`.
 
 ```
 include/poker_solver/
-  kuhn.hpp            Kuhn game model
-  cfr.hpp             CFR trainer for Kuhn
-  exploitability.hpp  best response + exploitability for Kuhn
-  leduc.hpp           Leduc game model
-  leduc_cfr.hpp       CFR trainer for Leduc (chance nodes, variable actions)
-  leduc_exploit.hpp   per-card best response + exploitability for Leduc
+  game.hpp            the Game concept both games satisfy
+  kuhn.hpp            Kuhn game model (rules only)
+  leduc.hpp           Leduc game model (rules only)
+  kuhn_game.hpp       Kuhn adapter to the concept
+  leduc_game.hpp      Leduc adapter to the concept
+  solver.hpp          the CFR trainer — one implementation, both games
+  best_response.hpp   per-card belief-propagation best response + exploitability
+  exploitability.hpp  Kuhn-only brute force, kept as an independent oracle
 src/
   main.cpp            Kuhn demo (convergence table + strategy)
   leduc_main.cpp      Leduc demo
-tests/                model, convergence, and exploitability tests for both games
+tests/                model, convergence, exploitability, and cross-validation
 ```
+
+Both games are expressed against a single `Game` concept, so there is one CFR
+implementation and one best-response implementation rather than two. The payoff
+is not fewer lines — it is `tests/test_equivalence.cpp`, which runs the
+belief-propagation best response on *Kuhn* and checks it against the brute-force
+oracle to 1e-12. That is the only independent evidence that the Leduc
+exploitability number is right, and it is impossible while the two games share
+no code.
 
 ## References
 

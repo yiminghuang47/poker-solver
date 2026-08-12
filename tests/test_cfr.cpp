@@ -5,15 +5,16 @@
 // We test the alpha-independent facts and the two relationships that pin the
 // family down, plus the game value (-1/18).
 
-#include "poker_solver/cfr.hpp"
 #include "poker_solver/kuhn.hpp"
+#include "poker_solver/kuhn_game.hpp"
+#include "poker_solver/solver.hpp"
 
 #include <cmath>
 #include <iostream>
 #include <string>
 
 namespace kuhn = poker_solver::kuhn;
-namespace cfr = poker_solver::cfr;
+using Trainer = poker_solver::solver::Trainer<poker_solver::KuhnGame>;
 
 namespace {
 int g_failures = 0;
@@ -27,14 +28,14 @@ void check_near(const std::string& what, double got, double want, double tol) {
 }
 
 // Probability of betting/calling at an info set under the average strategy.
-double bet_prob(const cfr::Trainer& t, const std::string& key) {
+double bet_prob(const Trainer& t, const std::string& key) {
     return t.nodes().at(key).average_strategy()[kuhn::kBet];
 }
 
 }  // namespace
 
 int main() {
-    cfr::Trainer trainer;
+    Trainer trainer;
     const double value = trainer.train(100000);
     constexpr double tol = 0.03;
 

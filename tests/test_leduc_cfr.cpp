@@ -3,17 +3,18 @@
 // known benchmark (~-0.086 to player 0), and exploitability that is nonnegative,
 // decreasing, and small.
 
+#include "poker_solver/best_response.hpp"
 #include "poker_solver/leduc.hpp"
-#include "poker_solver/leduc_cfr.hpp"
-#include "poker_solver/leduc_exploit.hpp"
+#include "poker_solver/leduc_game.hpp"
+#include "poker_solver/solver.hpp"
 
 #include <cmath>
 #include <iostream>
 #include <string_view>
 
 namespace leduc = poker_solver::leduc;
-namespace cfr = poker_solver::leduc_cfr;
-namespace exploit = poker_solver::leduc_exploit;
+namespace exploit = poker_solver::best_response;
+using Trainer = poker_solver::solver::Trainer<poker_solver::LeducGame>;
 
 namespace {
 int g_failures = 0;
@@ -34,7 +35,7 @@ int g_failures = 0;
 // leduc_exploit.hpp discard that subtree's mass and report a wrong number.
 void test_average_strategy_is_always_a_distribution() {
     for (int n : {1, 2, 5, 10}) {
-        cfr::Trainer t;
+        Trainer t;
         t.train(n);
         for (const auto& [key, node] : t.nodes()) {
             const auto avg = node.average_strategy();
@@ -58,9 +59,9 @@ void test_average_strategy_is_always_a_distribution() {
 int main() {
     test_average_strategy_is_always_a_distribution();
 
-    cfr::Trainer low;
+    Trainer low;
     low.train(1000);
-    cfr::Trainer high;
+    Trainer high;
     const double value = high.train(10000);
 
     // Leduc has exactly 288 information sets.

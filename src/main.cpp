@@ -1,17 +1,18 @@
 // Trains CFR on Kuhn poker: shows exploitability shrinking with iterations, then
 // the converged average strategy and game value.
 
-#include "poker_solver/cfr.hpp"
-#include "poker_solver/exploitability.hpp"
+#include "poker_solver/best_response.hpp"
 #include "poker_solver/kuhn.hpp"
+#include "poker_solver/kuhn_game.hpp"
+#include "poker_solver/solver.hpp"
 
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 
 namespace kuhn = poker_solver::kuhn;
-namespace cfr = poker_solver::cfr;
-namespace exploit = poker_solver::exploit;
+namespace br = poker_solver::best_response;
+using Trainer = poker_solver::solver::Trainer<poker_solver::KuhnGame>;
 
 // Iteration count for the detailed strategy dump when none is given on the
 // command line (and the fallback for a nonpositive/unparseable argument).
@@ -26,16 +27,16 @@ int main(int argc, char** argv) {
     // Convergence: exploitability -> 0 as iterations grow.
     std::cout << "iterations   game value   exploitability\n";
     for (int n : {100, 1000, 10000, 100000, 1000000}) {
-        cfr::Trainer t;
+        Trainer t;
         const double value = t.train(n);
-        const double eps = exploit::exploitability(t);
+        const double eps = br::exploitability(t);
         std::cout << std::setw(10) << n << "   " << std::showpos << std::fixed
                   << std::setprecision(5) << std::setw(9) << value << std::noshowpos
                   << "   " << std::setprecision(6) << std::setw(10) << eps << '\n';
     }
 
     // Detailed converged strategy at the requested iteration count.
-    cfr::Trainer trainer;
+    Trainer trainer;
     const double value = trainer.train(iterations);
     std::cout << "\nconverged at " << iterations << " iterations  (value "
               << std::showpos << std::setprecision(5) << value << std::noshowpos

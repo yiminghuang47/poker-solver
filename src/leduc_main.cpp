@@ -1,17 +1,18 @@
 // Trains CFR on Leduc Hold'em: shows exploitability shrinking with iterations,
 // the game value, the information-set count, and a few sample strategies.
 
+#include "poker_solver/best_response.hpp"
 #include "poker_solver/leduc.hpp"
-#include "poker_solver/leduc_cfr.hpp"
-#include "poker_solver/leduc_exploit.hpp"
+#include "poker_solver/leduc_game.hpp"
+#include "poker_solver/solver.hpp"
 
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 
 namespace leduc = poker_solver::leduc;
-namespace cfr = poker_solver::leduc_cfr;
-namespace exploit = poker_solver::leduc_exploit;
+namespace br = poker_solver::best_response;
+using Trainer = poker_solver::solver::Trainer<poker_solver::LeducGame>;
 
 // Iteration count for the detailed strategy dump when none is given on the
 // command line (and the fallback for a nonpositive/unparseable argument).
@@ -25,17 +26,17 @@ int main(int argc, char** argv) {
 
     std::cout << "iterations   game value   exploitability\n";
     for (int n : {100, 1000, 10000, 100000}) {
-        cfr::Trainer t;
+        Trainer t;
         const double v = t.train(n);
-        const double e = exploit::exploitability(t);
+        const double e = br::exploitability(t);
         std::cout << std::setw(10) << n << "   " << std::showpos << std::fixed
                   << std::setprecision(5) << std::setw(9) << v << std::noshowpos
                   << "   " << std::setprecision(6) << std::setw(10) << e << '\n';
     }
 
-    cfr::Trainer trainer;
+    Trainer trainer;
     const double v = trainer.train(iterations);
-    const double e = exploit::exploitability(trainer);
+    const double e = br::exploitability(trainer);
     std::cout << "\nconverged at " << iterations << " iterations  (value "
               << std::showpos << std::setprecision(5) << v << std::noshowpos
               << ", exploitability " << std::setprecision(6) << e << ")\n";
