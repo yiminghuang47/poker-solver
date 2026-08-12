@@ -3,11 +3,15 @@
 // known benchmark (~-0.086 to player 0), and exploitability that is nonnegative,
 // decreasing, and small.
 
+#include "poker_solver/leduc.hpp"
 #include "poker_solver/leduc_cfr.hpp"
 #include "poker_solver/leduc_exploit.hpp"
 
+#include <cmath>
 #include <iostream>
+#include <string_view>
 
+namespace leduc = poker_solver::leduc;
 namespace cfr = poker_solver::leduc_cfr;
 namespace exploit = poker_solver::leduc_exploit;
 
@@ -22,9 +26,38 @@ int g_failures = 0;
             ++g_failures;                                                 \
         }                                                                 \
     } while (0)
+// Regression: at very low iteration counts a few information sets are first
+// reached with reach probability exactly 0 (regrets update between deals, so a
+// strategy can go pure before the node is ever visited), leaving strategy_sum
+// all zeros. average_strategy() must still return a probability distribution
+// over the legal actions — an all-zero vector makes the best-response walk in
+// leduc_exploit.hpp discard that subtree's mass and report a wrong number.
+void test_average_strategy_is_always_a_distribution() {
+    for (int n : {1, 2, 5, 10}) {
+        cfr::Trainer t;
+        t.train(n);
+        for (const auto& [key, node] : t.nodes()) {
+            const auto avg = node.average_strategy();
+            double sum = 0.0;
+            for (double p : avg) sum += p;
+            CHECK(std::abs(sum - 1.0) < 1e-12);
+
+            // Illegal actions must carry no probability.
+            const auto legal =
+                leduc::legal_actions(std::string_view(key).substr(1));
+            for (int a = 0; a < leduc::kNumActions; ++a) {
+                if (!legal[a]) CHECK(avg[a] == 0.0);
+                CHECK(avg[a] >= 0.0);
+            }
+        }
+    }
+}
+
 }  // namespace
 
 int main() {
+    test_average_strategy_is_always_a_distribution();
+
     cfr::Trainer low;
     low.train(1000);
     cfr::Trainer high;

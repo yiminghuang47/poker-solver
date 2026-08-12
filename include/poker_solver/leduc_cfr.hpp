@@ -21,10 +21,15 @@ namespace poker_solver::leduc_cfr {
 struct Node {
     std::array<double, leduc::kNumActions> regret_sum{};
     std::array<double, leduc::kNumActions> strategy_sum{};
+    // The node's legal-action mask, recorded on every visit (it is a property of
+    // the information set, so it never changes). average_strategy() needs it for
+    // the degenerate case below.
+    std::array<bool, leduc::kNumActions> legal{};
 
     std::array<double, leduc::kNumActions> strategy(
             double realization_weight,
-            const std::array<bool, leduc::kNumActions>& legal) {
+            const std::array<bool, leduc::kNumActions>& legal_actions) {
+        legal = legal_actions;
         std::array<double, leduc::kNumActions> strat{};
         double norm = 0.0;
         int num_legal = 0;
@@ -47,8 +52,23 @@ struct Node {
         std::array<double, leduc::kNumActions> avg{};
         double norm = 0.0;
         for (double s : strategy_sum) norm += s;
+        if (norm > 0.0) {
+            for (int a = 0; a < leduc::kNumActions; ++a) {
+                avg[a] = strategy_sum[a] / norm;
+            }
+            return avg;
+        }
+        // strategy_sum is all zeros: every visit to this information set had
+        // reach probability exactly 0, which happens for a handful of nodes at
+        // very low iteration counts. Returning zeros would not be a probability
+        // distribution, and the best-response walk in leduc_exploit.hpp would
+        // silently drop this subtree's mass instead of exploring it. Fall back
+        // to uniform over legal actions, matching the Kuhn trainer.
+        int num_legal = 0;
+        for (bool b : legal) num_legal += b;
+        if (num_legal == 0) return avg;  // node never visited; nothing to say
         for (int a = 0; a < leduc::kNumActions; ++a) {
-            avg[a] = norm > 0.0 ? strategy_sum[a] / norm : 0.0;
+            avg[a] = legal[a] ? 1.0 / num_legal : 0.0;
         }
         return avg;
     }
