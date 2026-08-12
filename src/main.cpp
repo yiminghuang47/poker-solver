@@ -13,9 +13,13 @@ namespace kuhn = poker_solver::kuhn;
 namespace cfr = poker_solver::cfr;
 namespace exploit = poker_solver::exploit;
 
+// Iteration count for the detailed strategy dump when none is given on the
+// command line (and the fallback for a nonpositive/unparseable argument).
+constexpr int kDefaultIterations = 1000000;
+
 int main(int argc, char** argv) {
-    int iterations = (argc > 1) ? std::atoi(argv[1]) : 1000000;
-    if (iterations <= 0) iterations = 1000000;
+    int iterations = (argc > 1) ? std::atoi(argv[1]) : kDefaultIterations;
+    if (iterations <= 0) iterations = kDefaultIterations;
 
     std::cout << "poker-solver — Kuhn CFR\n\n";
 

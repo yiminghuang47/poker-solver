@@ -13,9 +13,13 @@ namespace leduc = poker_solver::leduc;
 namespace cfr = poker_solver::leduc_cfr;
 namespace exploit = poker_solver::leduc_exploit;
 
+// Iteration count for the detailed strategy dump when none is given on the
+// command line (and the fallback for a nonpositive/unparseable argument).
+constexpr int kDefaultIterations = 100000;
+
 int main(int argc, char** argv) {
-    int iterations = (argc > 1) ? std::atoi(argv[1]) : 100000;
-    if (iterations <= 0) iterations = 100000;
+    int iterations = (argc > 1) ? std::atoi(argv[1]) : kDefaultIterations;
+    if (iterations <= 0) iterations = kDefaultIterations;
 
     std::cout << "poker-solver — Leduc Hold'em CFR\n\n";
 
