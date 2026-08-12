@@ -21,6 +21,22 @@ int g_failures = 0;
 
 constexpr int J = 0, Q = 1, K = 2;
 
+// The whole model layer is constexpr: these rules are checked at compile time,
+// so a regression in the betting logic breaks the build rather than the suite.
+static_assert(!leduc::is_terminal("rc"));       // round 1 closed -> chance node
+static_assert(leduc::needs_public_card("rc"));
+static_assert(!leduc::needs_public_card("rf"));  // a fold reveals no card
+static_assert(leduc::is_terminal("rc/Qcc"));
+static_assert(leduc::current_player("rc/Q") == 0);
+static_assert(leduc::current_player("rc/Qr") == 1);
+static_assert(leduc::num_raises("crrc") == 2);
+static_assert(leduc::legal_actions("rr")[leduc::kFold]);
+static_assert(!leduc::legal_actions("rr")[leduc::kRaise]);   // raise cap
+static_assert(!leduc::legal_actions("")[leduc::kFold]);      // nothing to fold to
+static_assert(leduc::contributions("crrc")[0] == 5);
+static_assert(leduc::terminal_utility_p0("rc/Qcc", Q, K) == +3.0);  // pair wins
+static_assert(leduc::terminal_utility_p0("rc/Jcc", K, K) == 0.0);   // split
+
 void test_terminal_and_chance() {
     // Mid-round-1: not terminal, not yet a chance node.
     CHECK(!leduc::is_terminal(""));

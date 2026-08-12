@@ -16,6 +16,7 @@
 //   "rc/Qcc"      ...then on a Q public card, both check -> showdown
 //   "crrf"        P0 checks, P1 bets, P0 raises, P1 folds -> P0 wins
 
+#include <algorithm>
 #include <array>
 #include <string>
 #include <string_view>
@@ -30,74 +31,73 @@ inline constexpr int kRaiseSize[2] = {2, 4};  // round 1, round 2
 
 enum Action : int { kFold = 0, kCall = 1, kRaise = 2 };
 
-inline char rank_char(int r) {
+constexpr char rank_char(int r) {
     constexpr char names[kNumRanks] = {'J', 'Q', 'K'};
     return names[r];
 }
-inline int char_rank(char c) { return c == 'J' ? 0 : c == 'Q' ? 1 : 2; }
-inline char action_char(int a) { return a == kFold ? 'f' : a == kCall ? 'c' : 'r'; }
+constexpr int char_rank(char c) { return c == 'J' ? 0 : c == 'Q' ? 1 : 2; }
+constexpr char action_char(int a) {
+    return a == kFold ? 'f' : a == kCall ? 'c' : 'r';
+}
 
 // --- History parsing ---------------------------------------------------------
 
-inline bool has_public(std::string_view h) {
+constexpr bool has_public(std::string_view h) {
     return h.find('/') != std::string_view::npos;
 }
-inline std::string_view round1_actions(std::string_view h) {
+constexpr std::string_view round1_actions(std::string_view h) {
     const auto s = h.find('/');
     return h.substr(0, s == std::string_view::npos ? h.size() : s);
 }
-inline int public_rank(std::string_view h) {
+constexpr int public_rank(std::string_view h) {
     const auto s = h.find('/');
     return s == std::string_view::npos ? -1 : char_rank(h[s + 1]);
 }
-inline std::string_view round2_actions(std::string_view h) {
+constexpr std::string_view round2_actions(std::string_view h) {
     const auto s = h.find('/');
     return s == std::string_view::npos ? std::string_view{} : h.substr(s + 2);
 }
-inline std::string_view current_actions(std::string_view h) {
+constexpr std::string_view current_actions(std::string_view h) {
     return has_public(h) ? round2_actions(h) : round1_actions(h);
 }
 
 // A round's betting is closed by a fold, a mutual check, or a call of a raise.
-inline bool round_closed(std::string_view a) {
-    if (a.empty()) return false;
-    if (a.back() == 'f') return true;
+// ends_with() is empty-safe, so no separate empty check is needed.
+constexpr bool round_closed(std::string_view a) {
+    if (a.ends_with('f')) return true;
     if (a == "cc") return true;
-    return a.back() == 'c' && a.find('r') != std::string_view::npos;
+    return a.ends_with('c') && a.find('r') != std::string_view::npos;
 }
 
-inline bool ends_fold(std::string_view h) { return !h.empty() && h.back() == 'f'; }
+constexpr bool ends_fold(std::string_view h) { return h.ends_with('f'); }
 
-inline bool is_terminal(std::string_view h) {
-    if (h.empty()) return false;
+constexpr bool is_terminal(std::string_view h) {
     if (ends_fold(h)) return true;
     return has_public(h) && round_closed(round2_actions(h));
 }
 
 // True at the chance node where the public card is about to be dealt: round 1 has
 // closed (by call/check, not fold) and no public card exists yet.
-inline bool needs_public_card(std::string_view h) {
+constexpr bool needs_public_card(std::string_view h) {
     if (has_public(h)) return false;
     const auto r1 = round1_actions(h);
-    return round_closed(r1) && r1.back() != 'f';
+    return round_closed(r1) && !r1.ends_with('f');
 }
 
 // Player to act (player 0 acts first in each round). Valid only at decision nodes.
-inline int current_player(std::string_view h) {
+constexpr int current_player(std::string_view h) {
     return static_cast<int>(current_actions(h).size()) % kNumPlayers;
 }
 
-inline int num_raises(std::string_view a) {
-    int n = 0;
-    for (char c : a) n += (c == 'r');
-    return n;
+constexpr int num_raises(std::string_view a) {
+    return static_cast<int>(std::ranges::count(a, 'r'));
 }
 
 // Legal actions at a (non-terminal, non-chance) decision node.
-inline std::array<bool, kNumActions> legal_actions(std::string_view h) {
+constexpr std::array<bool, kNumActions> legal_actions(std::string_view h) {
     std::array<bool, kNumActions> legal{false, false, false};
     const auto a = current_actions(h);
-    const bool facing_bet = !a.empty() && a.back() == 'r';
+    const bool facing_bet = a.ends_with('r');
     const bool can_raise = num_raises(a) < kMaxRaises;
     legal[kCall] = true;                 // check or call is always available
     legal[kFold] = facing_bet;           // only meaningful facing a bet
@@ -118,7 +118,7 @@ inline std::string info_set_key(int rank, std::string_view h) {
 // --- Payoffs -----------------------------------------------------------------
 
 // Total chips each player has committed (antes + bets), parsed from the history.
-inline std::array<int, kNumPlayers> contributions(std::string_view h) {
+constexpr std::array<int, kNumPlayers> contributions(std::string_view h) {
     std::array<int, kNumPlayers> total{1, 1};  // antes
     auto sim = [&](std::string_view a, int unit) {
         int level = 0;
@@ -142,13 +142,13 @@ inline std::array<int, kNumPlayers> contributions(std::string_view h) {
 }
 
 // The player who made the final (folding) action.
-inline int folder(std::string_view h) {
+constexpr int folder(std::string_view h) {
     const auto a = current_actions(h);
     return static_cast<int>(a.size() - 1) % kNumPlayers;
 }
 
 // Net chips won by player 0 at a terminal history. Precondition: is_terminal(h).
-inline double terminal_utility_p0(std::string_view h, int p0rank, int p1rank) {
+constexpr double terminal_utility_p0(std::string_view h, int p0rank, int p1rank) {
     const auto c = contributions(h);
     if (ends_fold(h)) {
         const int winner = 1 - folder(h);

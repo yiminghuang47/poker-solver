@@ -29,39 +29,38 @@ inline constexpr int kNumCards   = 3;  // J=0, Q=1, K=2
 enum Action : int { kPass = 0, kBet = 1 };
 
 // 'J' < 'Q' < 'K'; a higher card index is a stronger hand.
-inline char card_name(int card) {
+constexpr char card_name(int card) {
     constexpr char names[kNumCards] = {'J', 'Q', 'K'};
     return names[card];
 }
 
-inline char action_char(int action) { return action == kBet ? 'b' : 'p'; }
+constexpr char action_char(int action) { return action == kBet ? 'b' : 'p'; }
 
 // The player to act after `history`. Player 0 acts on the empty history.
-inline int current_player(std::string_view history) {
+constexpr int current_player(std::string_view history) {
     return static_cast<int>(history.size()) % kNumPlayers;
 }
 
 // Betting closes (the hand ends) on "pp", "bp", or "bb" as the last two actions.
 // "pb" is the only non-terminal two-action history (a bet still faces a decision).
-inline bool is_terminal(std::string_view history) {
-    if (history.size() < 2) return false;
-    const std::string_view last2 = history.substr(history.size() - 2);
-    return last2 == "pp" || last2 == "bp" || last2 == "bb";
+constexpr bool is_terminal(std::string_view history) {
+    return history.ends_with("pp") || history.ends_with("bp") ||
+           history.ends_with("bb");
 }
 
 // Net chips won by current_player(history), given both private cards.
 // Precondition: is_terminal(history).
-inline int payoff(std::string_view history, int card_current, int card_opponent) {
-    const std::string_view last2 = history.substr(history.size() - 2);
+constexpr int payoff(std::string_view history, int card_current,
+                     int card_opponent) {
     const bool current_wins_showdown = card_current > card_opponent;
 
     // Opponent just folded to a bet -> the player to act takes the pot.
-    if (last2 == "bp") return +1;
+    if (history.ends_with("bp")) return +1;
 
     // Check-check -> showdown contesting only the antes.
-    if (last2 == "pp") return current_wins_showdown ? +1 : -1;
+    if (history.ends_with("pp")) return current_wins_showdown ? +1 : -1;
 
-    // last2 == "bb": a bet was called -> showdown for one extra chip each.
+    // Ends "bb": a bet was called -> showdown for one extra chip each.
     return current_wins_showdown ? +2 : -2;
 }
 

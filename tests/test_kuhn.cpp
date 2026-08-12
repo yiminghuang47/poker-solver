@@ -23,6 +23,22 @@ int g_failures = 0;
 // Card indices for readability.
 constexpr int J = 0, Q = 1, K = 2;
 
+// The whole model layer is constexpr, so the core rules are verified by the
+// compiler before this binary is ever run. A violation is a build failure, not
+// a test failure — you cannot ship a broken payoff table.
+static_assert(!kuhn::is_terminal(""));
+static_assert(!kuhn::is_terminal("pb"));
+static_assert(kuhn::is_terminal("pp"));
+static_assert(kuhn::is_terminal("pbb"));
+static_assert(kuhn::current_player("") == 0);
+static_assert(kuhn::current_player("pb") == 0);
+static_assert(kuhn::current_player("pbp") == 1);
+static_assert(kuhn::payoff("pp", K, J) == +1);
+static_assert(kuhn::payoff("bb", J, K) == -2);
+static_assert(kuhn::payoff("bp", J, K) == +1);  // a fold ignores the cards
+static_assert(kuhn::card_name(K) == 'K');
+static_assert(kuhn::action_char(kuhn::kBet) == 'b');
+
 void test_terminal() {
     // Non-terminal: nothing decided yet, or a bet still faces a response.
     CHECK(!kuhn::is_terminal(""));
